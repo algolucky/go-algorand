@@ -6,7 +6,7 @@ DISTRIB=$ID
 
 ARCH_DEPS="boost boost-libs expect jq autoconf shellcheck sqlite python-virtualenv"
 UBUNTU_DEPS="libtool libboost-math-dev expect jq autoconf shellcheck sqlite3 python3-venv build-essential"
-FEDORA_DEPS="boost-devel expect jq autoconf ShellCheck sqlite python-virtualenv"
+FEDORA_DEPS="boost-devel expect jq autoconf ShellCheck sqlite python-virtualenv libtool gcc-c++ glibc-static libstdc++-static"
 
 if [ "${DISTRIB}" = "arch" ]; then
     pacman -S --refresh --needed --noconfirm $ARCH_DEPS
