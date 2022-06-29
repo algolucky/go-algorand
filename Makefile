@@ -339,3 +339,5 @@ archive:
 build_custom_linters:
 	cd $(SRCPATH)/cmd/partitiontest_linter/ && go build -buildmode=plugin -trimpath plugin/plugin.go && ls plugin.so
 	cd $(SRCPATH)
+
+-include Makefile.goreleaser

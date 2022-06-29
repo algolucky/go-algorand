@@ -1,0 +1,65 @@
+---
+builds:
+  -
+    main: ./cmd/algod
+    id: darwin-amd64
+    env:
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
+      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
+      - MACOSX_DEPLOYMENT_TARGET=10.7
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - -mod=readonly
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    hooks:
+      pre:
+        - /osxcross/target/bin/osxcross-macports install boost
+    ldflags: &ld-flags
+      - -X github.com/algorand/go-algorand/config.BuildNumber={{ .FullCommit }}
+      - -X github.com/algorand/go-algorand/config.CommitHash={{ .FullCommit }}
+      - -X github.com/algorand/go-algorand/config.Branch={{ .CommitTimestamp }}
+      - -X github.com/algorand/go-algorand/config.DefaultDeadlock={{ .Env.DEFAULT_DEADLOCK }}
+  -
+    main: ./cmd/algod
+    id: linux-armhf
+    env:
+      - CC=arm-linux-gnueabihf-gcc
+      - CXX=arm-linux-gnueabihf-g++
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/armhf
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
+      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - "7"
+    hooks:
+      pre:
+        - apt-get update && apt-get install libboost-math-dev
+    flags:
+      - -mod=readonly
+    ldflags: *ld-flags
+
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-develop"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

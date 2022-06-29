@@ -1,0 +1,36 @@
+export VERSION_DIRTY = $(if $(filter $(strip $(shell git status --porcelain|wc -c)), "0"),,true)
+export VERSION_GIT_BASE64 = $(shell git log -n 1 --pretty="%D"|base64|tr -d ' \n')
+
+PACKAGE_NAME := go-algorand
+GOLANG_CROSS_VERSION ?= v1.17.9
+
+GORELEASER = docker run --rm --privileged -e CGO_ENABLED=1 \
+	-v /var/run/docker.sock:/var/run/docker.sock \
+	-v $(shell pwd):/go/src/$(PACKAGE_NAME) \
+	-v $(shell pwd)/sysroot:/sysroot \
+	-w /go/src/$(PACKAGE_NAME) \
+	goreleaser/goreleaser-cross:$(GOLANG_CROSS_VERSION)
+
+.PHONY: release
+release:
+	goreleaser --rm-dist
+
+.PHONY: release/build
+# builds for current OS_ARCH
+release/build:
+	goreleaser build --single-target --rm-dist --skip-validate
+
+.PHONY: release/check
+# lints/checks goreleaser config
+release/check:
+	goreleaser check
+
+.PHONY: release/cross/dryrun
+# cross compilation using goreleaser-cross
+release/cross/dryrun:
+	@$(GORELEASER) -f .goreleaser.yaml --rm-dist --skip-validate --skip-publish
+
+.PHONY: release/snapshot
+# snapshot release
+release/snapshot:
+	goreleaser --rm-dist --snapshot
