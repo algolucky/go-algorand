@@ -54,7 +54,7 @@ REPO_ROOT="$( cd "$(dirname "$0")" ; pwd -P )"/../..
 if [ "${NORACEBUILD}" = "" ]; then
     # Need bin-race binaries for e2e tests
     pushd ${REPO_ROOT}
-    make build-race -j4
+    make install-race -j4
     popd
     RACE_OPTION="-race"
 else

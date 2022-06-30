@@ -207,13 +207,11 @@ rebuild_swagger: deps
 
 # develop
 
-build: buildsrc
-
 # We're making an empty file in the go-cache dir to
 # get around a bug in go build where it will fail
 # to cache binaries from time to time on empty NFS
 # dirs
-buildsrc: check-go-version crypto/libs/$(OS_TYPE)/$(ARCH)/lib/libsodium.a node_exporter NONGO_BIN
+install: check-go-version crypto/libs/$(OS_TYPE)/$(ARCH)/lib/libsodium.a node_exporter NONGO_BIN
 	mkdir -p "${GOCACHE}" && \
 	touch "${GOCACHE}"/file.txt && \
 	go install $(GOTRIMPATH) $(GOTAGS) $(GOBUILDMODE) -ldflags="$(GOLDFLAGS)" ./...
@@ -221,11 +219,11 @@ buildsrc: check-go-version crypto/libs/$(OS_TYPE)/$(ARCH)/lib/libsodium.a node_e
 check-go-version:
 	./scripts/check_golang_version.sh build
 
-## Build binaries with the race detector enabled in them.
+## Install binaries with the race detector enabled in them.
 ## This allows us to run e2e tests with race detection.
 ## We overwrite bin-race/kmd with a non -race version due to
 ## the incredible performance impact of -race on Scrypt.
-build-race: build
+install-race: install
 	@mkdir -p $(GOPATH1)/bin-race
 	GOBIN=$(GOPATH1)/bin-race go install $(GOTRIMPATH) $(GOTAGS) -race -ldflags="$(GOLDFLAGS)" ./...
 	cp $(GOPATH1)/bin/kmd $(GOPATH1)/bin-race
@@ -245,16 +243,16 @@ $(GOPATH1)/bin/ddconfig.sh: scripts/ddconfig.sh
 $(GOPATH1)/bin/%:
 	cp -f $< $@
 
-test: build
+test: install
 	$(GOTESTCOMMAND) $(GOTAGS) -race $(UNIT_TEST_SOURCES) -timeout 1h -coverprofile=coverage.txt -covermode=atomic
 
-fulltest: build-race
+fulltest: install-race
 	$(GOTESTCOMMAND) $(GOTAGS) -race $(UNIT_TEST_SOURCES) -timeout 1h -coverprofile=coverage.txt -covermode=atomic
 
-shorttest: build-race
+shorttest: install-race
 	$(GOTESTCOMMAND) $(GOTAGS) -short -race $(UNIT_TEST_SOURCES) -timeout 1h -coverprofile=coverage.txt -covermode=atomic
 
-integration: build-race
+integration: install-race
 	./test/scripts/run_integration_tests.sh
 
 testall: fulltest integration
@@ -320,15 +318,12 @@ gen/mainnet/genesis.json: gen/pregen/mainnet/genesis.csv buildsrc
 	mkdir -p gen/mainnet
 	cat gen/pregen/mainnet/genesis.csv | $(GOPATH1)/bin/incorporate -m gen/pregen/mainnet/metadata.json > gen/mainnet/genesis.json
 
-capabilities: build
+capabilities: install
 	sudo setcap cap_ipc_lock+ep $(GOPATH1)/bin/kmd
 
 dump: $(addprefix gen/,$(addsuffix /genesis.dump, $(NETWORKS)))
 
-install: build
-	scripts/dev_install.sh -p $(GOPATH1)/bin
-
-.PHONY: default fmt vet lint check_shell sanity cover prof deps build test fulltest shorttest clean cleango deploy node_exporter install %gen gen NONGO_BIN check-go-version rebuild_swagger
+.PHONY: default fmt vet lint check_shell sanity cover prof deps test fulltest shorttest clean cleango deploy node_exporter install install-race %gen gen NONGO_BIN check-go-version rebuild_swagger
 
 ###### TARGETS FOR CICD PROCESS ######
 include ./scripts/release/mule/Makefile.mule

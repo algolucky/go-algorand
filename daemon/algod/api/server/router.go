@@ -51,7 +51,7 @@
 // Currently, server implementation annotations serve as the API ground truth. From that,
 // we use go-swagger to generate a swagger spec.
 //
-// Autogenerate the swagger json - automatically run by the 'make build' step.
+// Autogenerate the swagger json - automatically run by the 'make install' step.
 // Base path must be a fully specified package name (else, it seems that swagger feeds a relative path to
 // loader.Config.Import(), and that breaks the vendor directory if the source is symlinked from elsewhere)
 //go:generate swagger generate spec -o="../swagger.json"

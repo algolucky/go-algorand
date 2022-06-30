@@ -27,7 +27,7 @@ We chose to maintain V2 and V3 versions of the spec because OpenAPI v3 doesn't s
 
 - `swagger.json` defines the API schema. However, server code in `api/v1/...` 
 currently serves as the ground truth, as the schema is generated from server code.
-	- to generate `swagger.json`, run `make build`. You may need to have `go-swagger`
+	- to generate `swagger.json`, run `make install`. You may need to have `go-swagger`
 	installed. You can get it by running `make deps`.
 - `api/client` is a package for internal (or external) libraries to interact with
  the REST API. In particular, it should minimize dependencies. 

@@ -17,4 +17,4 @@
 #
 # Examples: scripts/build_prod.sh
 
-make build
+make install

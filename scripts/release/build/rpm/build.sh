@@ -44,7 +44,7 @@ REPO_DIR=/root/go/src/github.com/algorand/go-algorand
 # Build!
 "${REPO_DIR}"/scripts/configure_dev-deps.sh
 cd "${REPO_DIR}"
-make build
+make install
 
 # Copy binaries to the host for use in the packaging stage.
 cp "${GOPATH}"/bin/* /root/subhome/go/bin/
