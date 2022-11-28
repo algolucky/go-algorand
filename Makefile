@@ -214,6 +214,9 @@ buildsrc: check-go-version crypto/libs/$(OS_TYPE)/$(ARCH)/lib/libsodium.a node_e
 	touch "${GOCACHE}"/file.txt && \
 	go install $(GOTRIMPATH) $(GOTAGS) $(GOBUILDMODE) -ldflags="$(GOLDFLAGS)" ./...
 
+container/build:
+	docker build . -t algod:testing
+
 check-go-version:
 	./scripts/check_golang_version.sh build
 

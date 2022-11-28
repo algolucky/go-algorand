@@ -1,0 +1,49 @@
+ARG CHANNEL="stable"
+ARG VERSION
+ARG ARCH="amd64"
+
+FROM docker.io/library/golang:1.17.13-bullseye as dist
+
+ARG CHANNEL
+ARG VERSION
+ARG ARCH
+
+ENV DEBIAN_FRONTEND="noninteractive"
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y curl gnupg tar && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /dist
+
+ADD https://algorand-releases.s3.amazonaws.com/channel/${CHANNEL}/node_${CHANNEL}_linux-${ARCH}_${VERSION}.tar.gz .
+ADD https://algorand-releases.s3.amazonaws.com/channel/${CHANNEL}/node_${CHANNEL}_linux-${ARCH}_${VERSION}.tar.gz.sig .
+ADD https://algorand-releases.s3.amazonaws.com/channel/${CHANNEL}/tools_${CHANNEL}_linux-${ARCH}_${VERSION}.tar.gz .
+ADD https://algorand-releases.s3.amazonaws.com/channel/${CHANNEL}/tools_${CHANNEL}_linux-${ARCH}_${VERSION}.tar.gz.sig .
+
+RUN GNUPGHOME="$(mktemp -d)" ; export GNUPGHOME ; \
+    curl -sSL https://releases.algorand.com/key.pub -O && \
+    gpg --import key.pub && \
+    for artifact in ./*.tar.gz ; do gpg --verbose --verify $artifact.sig $artifact ; done && \
+    rm -rf "$GNUPGHOME" ./*.tar.gz.sig && \
+    for artifact in ./*.tar.gz ; do tar xzvf $artifact ; done && \
+    rm -rf ./*.tar.gz
+
+# do not include these in final container
+RUN rm -rf /dist/COPYING
+
+FROM docker.io/library/debian:bullseye-slim
+
+COPY --from=dist /dist/bin/ /usr/local/bin/
+COPY --from=dist /dist/genesis/ /node/run/genesis/
+COPY --from=dist /dist/data/ /node/run/data/
+
+COPY ./docker/entrypoint.sh /entrypoint.sh
+COPY ./docker/files/run/ /node/run/
+
+ENV ALGOD_PORT="8080" ALGORAND_DATA="/algod/data"
+
+# expose algod, gossip, and metrics ports
+EXPOSE $ALGOD_PORT 4160 9100
+
+ENTRYPOINT [ "/entrypoint.sh" ]

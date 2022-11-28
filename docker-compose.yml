@@ -1,0 +1,22 @@
+---
+version: "3"
+services:
+  algod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CHANNEL: ${CHANNEL:-stable}
+        VERSION: ${VERSION:-3.11.3}
+        ARCH: ${ARCH:-amd64}
+    environment:
+      NETWORK: ${NETWORK:-mainnet}
+    volumes:
+      - algod-data:/algod/data
+    ports:
+      - 4080:8080
+      - 4160:4160
+      - 9100:9100
+
+volumes:
+  algod-data:
