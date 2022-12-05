@@ -25,10 +25,10 @@ function apply_configuration() {
 
   # check for environment variable overrides.
   if [ "$TOKEN" != "" ]; then
-    echo "$TOKEN" > algod.token
+    echo "$TOKEN" >algod.token
   fi
   if [ "$ADMIN_TOKEN" != "" ]; then
-    echo "$ADMIN_TOKEN" > algod.admin.token
+    echo "$ADMIN_TOKEN" >algod.admin.token
   fi
 
   # configure telemetry
@@ -58,7 +58,7 @@ function start_public_network() {
   apply_configuration
 
   if [ $FAST_CATCHUP ]; then
-    catchup&
+    catchup &
   fi
   # redirect output to stdout
   algod -o
@@ -82,8 +82,7 @@ function start_new_public_network() {
   fi
 
   mkdir -p "$ALGORAND_DATA"
-  mv dataTemplate/* "$ALGORAND_DATA"
-  rm -rf dataTemplate
+  mv run/data/* "$ALGORAND_DATA"
 
   cp "run/genesis/$NETWORK/genesis.json" "$ALGORAND_DATA/genesis.json"
   cd "$ALGORAND_DATA"
@@ -93,12 +92,15 @@ function start_new_public_network() {
 
   local ID
   case $NETWORK in
-    mainnet)  ID="<network>.algorand.network";;
-    testnet)  ID="<network>.algorand.network";;
-    betanet)  ID="<network>.algodev.network";;
-    alphanet) ID="<network>.algodev.network";;
-    devnet)   ID="<network>.algodev.network";;
-    *)        echo "Unknown network"; exit 1;;
+  mainnet) ID="<network>.algorand.network" ;;
+  testnet) ID="<network>.algorand.network" ;;
+  betanet) ID="<network>.algodev.network" ;;
+  alphanet) ID="<network>.algodev.network" ;;
+  devnet) ID="<network>.algodev.network" ;;
+  *)
+    echo "Unknown network"
+    exit 1
+    ;;
   esac
   set -p DNSBootstrapID -v "$ID"
 

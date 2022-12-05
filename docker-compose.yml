@@ -1,0 +1,23 @@
+---
+version: "3"
+services:
+  algod:
+    build:
+      context: ./
+    container_name: ${NETWORK:-mainnet}-algod
+    environment:
+      NETWORK: ${NETWORK:-mainnet}
+      ALGORAND_DATA: ${ALGORAND_DATA:-/algod/data}
+      FAST_CATCHUP: $FAST_CATCHUP
+      TOKEN: ${TOKEN:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      TELEMETRY_NAME: $TELEMETRY_NAME
+    volumes:
+      - algod-data:${ALGORAND_DATA:-/algod/data}
+    ports:
+      - ${ALGOD_PORT:-8080}:8080
+      - ${GOSSIP_PORT:-4160}:4160
+      - ${METRICS_PORT:-9100}:9100
+
+volumes:
+  algod-data:
+    name: ${NETWORK:-mainnet}-algod-data

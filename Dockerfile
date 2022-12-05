@@ -1,75 +1,47 @@
-ARG GO_VERSION=1.17.5
-FROM golang:$GO_VERSION-bullseye as builder
+FROM docker.io/library/golang:1.17.13-bullseye as build
 
-ARG CHANNEL=nightly
-ARG URL=
-ARG BRANCH=
-ARG SHA=
+ENV DEBIAN_FRONTEND="noninteractive"
 
-# Basic dependencies.
-ENV HOME /node
-ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
-    apt-get install -y \
-    apt-utils \
-    bsdmainutils \
-    curl \
-    git \
-    git-core \
-    python3
+    apt-get install --no-install-recommends -y \
+    autoconf \
+    automake \
+    build-essential \
+    libboost-math-dev \
+    libtool \
+    sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY ./docker/files/ /node/files
-COPY ./installer/genesis /node/files/run/genesis
-COPY ./cmd/updater/update.sh /node/files/build/update.sh
-COPY ./installer/config.json.example /node/files/build/config.json
+COPY . /go-algorand/
 
-RUN find /node/files
+WORKDIR /go-algorand
 
-# Install algod binaries.
-RUN /node/files/build/install.sh \
-    -p "/node/bin" \
-    -d "/node/data" \
-    -c "${CHANNEL}" \
-    -u "${URL}" \
-    -b "${BRANCH}" \
-    -s "${SHA}"
+RUN git submodule update --init && \
+    make build
 
-# Copy binaries into a clean image
-# TODO: We don't need most of the binaries.
-#       Should we delete everything except goal/algod/algocfg/tealdbg?
-FROM debian:bullseye-slim as final
-COPY --from=builder "/node/bin/" "/node/bin"
-COPY --from=builder "/node/data/" "/node/dataTemplate"
-COPY --from=builder "/node/files/run" "/node/run"
+# do not include these in final container
+RUN rm -rf /go/bin/COPYING
 
-ENV BIN_DIR="/node/bin"
-ENV PATH="$BIN_DIR:${PATH}"
-ENV ALGOD_PORT=8080
-ENV ALGORAND_DATA="/algod/data"
-RUN mkdir -p "$ALGORAND_DATA"
-WORKDIR /node/data
+FROM docker.io/library/debian:bullseye-slim
 
-# curl is needed to lookup the fast catchup url
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# GOPATH is /go
+# e.g. https://github.com/docker-library/golang/blob/326acd5eed36954174ba8b3b6d0efda96087e18a/1.19/alpine3.15/Dockerfile#L120
+COPY --from=build /go/bin/ /usr/local/bin/
+COPY --from=build /go-algorand/docker/files/run/ /node/run/
+COPY --from=build /go-algorand/installer/config.json.example /node/run/data/
+COPY --from=build /go-algorand/installer/genesis/ /node/run/genesis/
 
-# TODO: This works fine, but causes problems when mounting a volume
-# Use algorand user instead of root
-#RUN groupadd -r algorand && \
-#  useradd --no-log-init -r -g algorand algorand && \
-#  chown -R algorand.algorand /node && \
-#  chown -R algorand.algorand /algod
-#USER algorand
+ENV ALGORAND_DATA="/algod/data" ALGOD_PORT="8080"
 
-# Algod REST API
-EXPOSE $ALGOD_PORT
+# expose algod rest api, algod gossip, and prometheus metrics ports
+EXPOSE $ALGOD_PORT 4160 9100
 
-# Algod Gossip Port
-EXPOSE 4160
+# TODO: enable running as non-root user
+# RUN groupadd --system algorand && \
+#     useradd --no-log-init --system --gid algorand algorand && \
+#     mkdir -p /algod && \
+#     chown -R algorand.algorand /node /algod
 
-# Prometheus Metrics
-EXPOSE 9100
+# USER algorand
 
-CMD ["/node/run/run.sh"]
-#CMD ["/bin/bash"]
+ENTRYPOINT [ "/node/run/run.sh" ]
